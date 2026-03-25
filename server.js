@@ -17,28 +17,35 @@ Tu tarea se divide en dos fases:
 
 FASE 1 — EXTRACCIÓN (aplica estas reglas estrictamente):
 
-Regla Maestra de Ámbito de Viajero: Si se listan varios viajeros bajo un mismo concepto o proyecto, todos los servicios detallados aplican a todos esos viajeros. El coste de cada servicio compartido se divide a partes iguales entre el número de viajeros, SALVO que se indique explícitamente a quién corresponde.
+REGLA DE PRECIOS: Hay dos casos posibles para servicios con varios viajeros:
+  A) Una sola línea con un precio total → ese precio SE DIVIDE a partes iguales entre todos los viajeros.
+  B) Varias líneas con precios distintos para el mismo tipo de servicio → cada precio corresponde a un viajero en el orden en que aparecen listados. NO se dividen, cada uno tiene su precio propio.
+  La columna TOTAL del documento te confirma cuál es el caso: si el TOTAL de esa línea coincide con el precio unitario × número de viajeros, es caso A. Si cada línea tiene su propio TOTAL distinto, es caso B.
 
-Una Fila por Persona y Servicio: Cada línea de salida = un servicio para una persona.
+REGLA DE ÁMBITO DE VIAJERO: Si se listan varios viajeros bajo un mismo concepto o proyecto, todos los servicios de ese bloque aplican a todos esos viajeros, salvo que se indique explícitamente lo contrario.
 
-Tasas de Emisión: Siempre van en su propia línea separada por viajero, nunca agrupadas con otros conceptos.
+UNA FILA POR PERSONA Y SERVICIO: Cada línea de salida = un servicio para una persona.
 
-Noches de Hotel: Calcula el número de noches (ej: del 11 al 14 = 3 noches) y usa el formato "(descripción) // X NOCHES".
+TASAS DE EMISIÓN: Siempre en su propia línea por viajero, nunca agrupadas.
 
-Limpieza de Nombres: Extrae el nombre completo omitiendo títulos como SR., SRA., D., etc.
+NOCHES DE HOTEL: Calcula el número de noches (ej: del 11 al 14 = 3 noches). Formato: "(descripción) // X NOCHE" si es 1 noche, "(descripción) // X NOCHES" si son 2 o más.
 
-Validación: La suma de todos los "importe_unitario" debe coincidir EXACTAMENTE con el subtotal del documento. Si no cuadra, revisa y corrige antes de responder.
+LIMPIEZA DE NOMBRES: Extrae el nombre completo omitiendo SR., SRA., D., etc.
+
+NUMERO DE PROYECTO: Es el código alfanumérico que aparece justo antes o junto a la descripción del proyecto (ej: "24VNR02", "KS13061"). Códigos tipo "KS XXXXX" al pie del documento son referencias internas del agente, NO son número de proyecto — déjalos en blanco a menos que aparezcan claramente como identificador del proyecto en la cabecera del bloque de servicios.
+
+VALIDACIÓN OBLIGATORIA: Antes de responder, suma todos los importe_unitario y verifica que coinciden exactamente con el subtotal del documento. Si no cuadra, revisa y corrige.
 
 CAMPOS A EXTRAER:
 - n_albaran: número de albarán
-- numero_proyecto: código del proyecto (solo si es numérico/alfanumérico; si solo hay descripción, dejar vacío)
+- numero_proyecto: código del proyecto (alfanumérico, de la cabecera del bloque; vacío si no hay)
 - descripcion_proyecto: nombre de marca o descripción del proyecto
 - nombre_quien_viaja: nombre del pasajero (sin títulos)
 - fecha: fecha de inicio del servicio (formato DD-MM-AAAA)
 - trayecto: ORIGEN - DESTINO para transporte, o CIUDAD para otros servicios
 - descripcion_servicio: descripción completa y literal del servicio (aplicando regla de noches si aplica)
-- descripcion_abreviada: categoría del servicio — solo una de: TREN, HOTEL, AVION, COCHE, TAXI, OTROS
-- importe_unitario: coste del servicio para esa persona (ya dividido si era compartido)
+- descripcion_abreviada: categoría — solo una de: TREN, HOTEL, AVION, COCHE, TAXI, OTROS
+- importe_unitario: coste del servicio para esa persona (ver regla de precios)
 - subtotal: subtotal total del albarán (igual para todas las filas del mismo documento)
 
 FASE 2 — FORMATO DE SALIDA:
