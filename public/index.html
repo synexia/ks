@@ -17,6 +17,7 @@
       --muted: #8A7F72;
       --border: #D4C9B8;
       --card: #FDFAF4;
+      --warn: #B87A10;
       --mono: 'DM Mono', monospace;
       --serif: 'Fraunces', Georgia, serif;
     }
@@ -38,22 +39,9 @@
       gap: 16px;
     }
 
-    .logo {
-      font-family: var(--serif);
-      font-size: 28px;
-      font-weight: 600;
-      letter-spacing: -0.5px;
-      color: var(--ink);
-    }
-
+    .logo { font-family: var(--serif); font-size: 28px; font-weight: 600; letter-spacing: -0.5px; }
     .logo span { color: var(--accent); }
-
-    .tagline {
-      font-size: 11px;
-      color: var(--muted);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
+    .tagline { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
 
     main {
       flex: 1;
@@ -64,193 +52,124 @@
       padding: 48px 24px;
     }
 
-    .container {
-      width: 100%;
-      max-width: 680px;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
+    .container { width: 100%; max-width: 680px; display: flex; flex-direction: column; gap: 20px; }
 
+    /* Drop zone */
     .drop-zone {
       border: 1.5px dashed var(--border);
       border-radius: 4px;
-      padding: 56px 40px;
+      padding: 48px 40px;
       text-align: center;
       cursor: pointer;
       transition: all 0.2s ease;
       background: var(--card);
     }
-
-    .drop-zone:hover, .drop-zone.dragover {
-      border-color: var(--accent);
-      background: #FDF8F2;
-    }
-
+    .drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: #FDF8F2; }
     .drop-zone.dragover { border-style: solid; }
-
-    .drop-icon { font-size: 40px; margin-bottom: 16px; display: block; }
-
-    .drop-title {
-      font-family: var(--serif);
-      font-size: 22px;
-      font-weight: 300;
-      margin-bottom: 8px;
-    }
-
+    .drop-icon { font-size: 36px; margin-bottom: 14px; display: block; }
+    .drop-title { font-family: var(--serif); font-size: 21px; font-weight: 300; margin-bottom: 6px; }
     .drop-sub { font-size: 12px; color: var(--muted); letter-spacing: 0.05em; }
-
     #fileInput { display: none; }
 
-    .file-list { display: flex; flex-direction: column; gap: 8px; }
-
+    /* File list */
+    .file-list { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto; }
     .file-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 3px;
-      animation: slideIn 0.2s ease;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px; background: var(--card); border: 1px solid var(--border);
+      border-radius: 3px; animation: slideIn 0.15s ease;
     }
+    .file-item.ok { border-left: 3px solid var(--accent2); }
+    .file-item.err { border-left: 3px solid var(--accent); }
+    .file-item.processing { border-left: 3px solid var(--warn); }
 
     @keyframes slideIn {
-      from { opacity: 0; transform: translateY(-6px); }
+      from { opacity: 0; transform: translateY(-4px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    .file-name {
-      font-size: 13px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 460px;
-    }
-
+    .file-name { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 500px; }
+    .file-status { font-size: 11px; flex-shrink: 0; margin-left: 10px; }
     .file-remove {
-      background: none;
-      border: none;
-      color: var(--muted);
-      cursor: pointer;
-      font-size: 18px;
-      line-height: 1;
-      padding: 0 4px;
-      transition: color 0.15s;
+      background: none; border: none; color: var(--muted); cursor: pointer;
+      font-size: 16px; line-height: 1; padding: 0 2px; transition: color 0.15s; flex-shrink: 0;
     }
     .file-remove:hover { color: var(--accent); }
 
-    .btn-procesar {
-      background: var(--ink);
-      color: var(--bg);
-      border: none;
-      padding: 16px 32px;
-      font-family: var(--mono);
-      font-size: 13px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      cursor: pointer;
-      border-radius: 3px;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
+    /* Contador */
+    .file-counter { font-size: 11px; color: var(--muted); text-align: right; letter-spacing: 0.04em; }
+
+    /* Progreso */
+    .progress-box {
+      display: none; flex-direction: column; gap: 10px;
+      background: var(--card); border: 1px solid var(--border); border-radius: 3px; padding: 20px;
+    }
+    .progress-box.visible { display: flex; }
+
+    .progress-header { display: flex; justify-content: space-between; align-items: baseline; }
+    .progress-label { font-size: 13px; }
+    .progress-count { font-size: 12px; color: var(--muted); }
+
+    .progress-track { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .progress-fill {
+      height: 100%; background: var(--accent2); border-radius: 2px;
+      width: 0%; transition: width 0.3s ease;
     }
 
+    .progress-log {
+      max-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px;
+    }
+    .log-line { font-size: 11px; color: var(--muted); letter-spacing: 0.03em; }
+    .log-line.ok { color: var(--accent2); }
+    .log-line.err { color: var(--accent); }
+
+    /* Botón procesar */
+    .btn-procesar {
+      background: var(--ink); color: var(--bg); border: none;
+      padding: 15px 32px; font-family: var(--mono); font-size: 13px;
+      letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
+      border-radius: 3px; transition: all 0.2s ease;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
     .btn-procesar:hover:not(:disabled) { background: var(--accent); }
     .btn-procesar:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    .status-bar { display: none; flex-direction: column; gap: 8px; }
-    .status-bar.visible { display: flex; }
-
-    .status-text {
-      font-size: 12px;
-      color: var(--muted);
-      letter-spacing: 0.05em;
-      text-align: center;
-    }
-
-    .progress-track {
-      height: 2px;
-      background: var(--border);
-      border-radius: 1px;
-      overflow: hidden;
-    }
-
-    .progress-fill {
-      height: 100%;
-      background: var(--accent);
-      width: 40%;
-      animation: indeterminate 1.2s ease infinite;
-      border-radius: 1px;
-    }
-
-    @keyframes indeterminate {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(350%); }
-    }
-
+    /* Resultado */
     .result-box {
-      display: none;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 3px;
-      padding: 24px;
-      flex-direction: column;
-      gap: 16px;
+      display: none; background: var(--card); border: 1px solid var(--border);
+      border-radius: 3px; padding: 22px; flex-direction: column; gap: 14px;
       animation: slideIn 0.3s ease;
     }
     .result-box.visible { display: flex; }
-
     .result-header { display: flex; align-items: center; gap: 10px; }
-
-    .result-badge {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--accent2);
-      flex-shrink: 0;
-    }
-
+    .result-badge { width: 8px; height: 8px; border-radius: 50%; background: var(--accent2); flex-shrink: 0; }
     .result-title { font-family: var(--serif); font-size: 18px; font-weight: 300; }
-    .result-stats { font-size: 12px; color: var(--muted); letter-spacing: 0.04em; }
+    .result-stats { font-size: 12px; color: var(--muted); letter-spacing: 0.04em; line-height: 1.8; }
+    .result-warn { font-size: 12px; color: var(--warn); }
 
     .btn-reset {
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      padding: 10px 20px;
-      font-family: var(--mono);
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      cursor: pointer;
-      border-radius: 3px;
-      transition: all 0.15s ease;
-      align-self: flex-start;
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      padding: 10px 20px; font-family: var(--mono); font-size: 11px;
+      letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
+      border-radius: 3px; transition: all 0.15s ease; align-self: flex-start;
     }
     .btn-reset:hover { border-color: var(--ink); color: var(--ink); }
 
+    /* Error */
     .error-box {
-      display: none;
-      background: #FDF0EE;
-      border: 1px solid #E8B8B0;
-      border-radius: 3px;
-      padding: 16px 20px;
-      font-size: 13px;
-      color: var(--accent);
+      display: none; background: #FDF0EE; border: 1px solid #E8B8B0;
+      border-radius: 3px; padding: 14px 18px; font-size: 13px; color: var(--accent);
     }
     .error-box.visible { display: block; }
 
     footer {
-      text-align: center;
-      padding: 20px;
-      font-size: 11px;
-      color: var(--muted);
-      letter-spacing: 0.06em;
-      border-top: 1px solid var(--border);
+      text-align: center; padding: 18px; font-size: 11px; color: var(--muted);
+      letter-spacing: 0.06em; border-top: 1px solid var(--border);
     }
+
+    /* Scrollbar sutil */
+    .file-list::-webkit-scrollbar, .progress-log::-webkit-scrollbar { width: 4px; }
+    .file-list::-webkit-scrollbar-track, .progress-log::-webkit-scrollbar-track { background: transparent; }
+    .file-list::-webkit-scrollbar-thumb, .progress-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
   </style>
 </head>
 <body>
@@ -266,17 +185,22 @@
     <div class="drop-zone" id="dropZone">
       <span class="drop-icon">📄</span>
       <div class="drop-title">Arrastra los albaranes aquí</div>
-      <div class="drop-sub">O haz clic para seleccionar · PDF · Hasta 20 archivos</div>
+      <div class="drop-sub">O haz clic para seleccionar · PDF · Hasta 100 archivos</div>
       <input type="file" id="fileInput" accept=".pdf" multiple />
     </div>
 
+    <div class="file-counter" id="fileCounter" style="display:none"></div>
     <div class="file-list" id="fileList"></div>
 
-    <div class="status-bar" id="statusBar">
-      <div class="status-text" id="statusText">Procesando albaranes...</div>
+    <div class="progress-box" id="progressBox">
+      <div class="progress-header">
+        <span class="progress-label" id="progressLabel">Procesando...</span>
+        <span class="progress-count" id="progressCount">0 / 0</span>
+      </div>
       <div class="progress-track">
         <div class="progress-fill" id="progressFill"></div>
       </div>
+      <div class="progress-log" id="progressLog"></div>
     </div>
 
     <div class="error-box" id="errorBox"></div>
@@ -287,11 +211,12 @@
         <div class="result-title">Extracción completada</div>
       </div>
       <div class="result-stats" id="resultStats"></div>
+      <div class="result-warn" id="resultWarn"></div>
       <button class="btn-reset" id="btnReset">Procesar nuevos albaranes</button>
     </div>
 
     <button class="btn-procesar" id="btnProcesar" disabled>
-      <span>Procesar y descargar Excel</span>
+      Procesar y descargar Excel
     </button>
 
   </div>
@@ -300,112 +225,199 @@
 <footer>KS Viajes · Sistema interno de gestión de albaranes</footer>
 
 <script>
-  const dropZone = document.getElementById('dropZone');
-  const fileInput = document.getElementById('fileInput');
-  const fileList = document.getElementById('fileList');
+  const dropZone    = document.getElementById('dropZone');
+  const fileInput   = document.getElementById('fileInput');
+  const fileList    = document.getElementById('fileList');
+  const fileCounter = document.getElementById('fileCounter');
   const btnProcesar = document.getElementById('btnProcesar');
-  const statusBar = document.getElementById('statusBar');
-  const statusText = document.getElementById('statusText');
-  const errorBox = document.getElementById('errorBox');
-  const resultBox = document.getElementById('resultBox');
+  const progressBox = document.getElementById('progressBox');
+  const progressLabel = document.getElementById('progressLabel');
+  const progressCount = document.getElementById('progressCount');
+  const progressFill  = document.getElementById('progressFill');
+  const progressLog   = document.getElementById('progressLog');
+  const errorBox    = document.getElementById('errorBox');
+  const resultBox   = document.getElementById('resultBox');
   const resultStats = document.getElementById('resultStats');
-  const btnReset = document.getElementById('btnReset');
+  const resultWarn  = document.getElementById('resultWarn');
+  const btnReset    = document.getElementById('btnReset');
 
-  let archivosSeleccionados = [];
+  let archivos = [];
 
+  // Drag & drop
   dropZone.addEventListener('click', () => fileInput.click());
   dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
   dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
   dropZone.addEventListener('drop', e => {
-    e.preventDefault();
-    dropZone.classList.remove('dragover');
+    e.preventDefault(); dropZone.classList.remove('dragover');
     agregarArchivos([...e.dataTransfer.files]);
   });
-  fileInput.addEventListener('change', () => {
-    agregarArchivos([...fileInput.files]);
-    fileInput.value = '';
-  });
+  fileInput.addEventListener('change', () => { agregarArchivos([...fileInput.files]); fileInput.value = ''; });
 
   function agregarArchivos(nuevos) {
     const pdfs = nuevos.filter(f => f.type === 'application/pdf');
-    archivosSeleccionados = [...archivosSeleccionados, ...pdfs].slice(0, 20);
-    renderFileList();
+    archivos = [...archivos, ...pdfs].slice(0, 100);
+    renderLista();
   }
 
-  function renderFileList() {
+  function renderLista() {
     fileList.innerHTML = '';
-    archivosSeleccionados.forEach((f, i) => {
+    archivos.forEach((f, i) => {
       const item = document.createElement('div');
       item.className = 'file-item';
-      item.innerHTML = `
-        <span class="file-name">📄 ${f.name}</span>
-        <button class="file-remove" data-i="${i}">×</button>
-      `;
+      item.id = `file-${i}`;
+      item.innerHTML = `<span class="file-name">📄 ${f.name}</span><button class="file-remove" data-i="${i}">×</button>`;
       fileList.appendChild(item);
     });
     fileList.querySelectorAll('.file-remove').forEach(btn => {
-      btn.addEventListener('click', () => {
-        archivosSeleccionados.splice(+btn.dataset.i, 1);
-        renderFileList();
-      });
+      btn.addEventListener('click', () => { archivos.splice(+btn.dataset.i, 1); renderLista(); });
     });
-    btnProcesar.disabled = archivosSeleccionados.length === 0;
+    btnProcesar.disabled = archivos.length === 0;
+    if (archivos.length > 0) {
+      fileCounter.style.display = 'block';
+      fileCounter.textContent = `${archivos.length} archivo${archivos.length > 1 ? 's' : ''} seleccionado${archivos.length > 1 ? 's' : ''}`;
+    } else {
+      fileCounter.style.display = 'none';
+    }
+  }
+
+  function addLog(mensaje, tipo = '') {
+    const line = document.createElement('div');
+    line.className = `log-line ${tipo}`;
+    line.textContent = mensaje;
+    progressLog.appendChild(line);
+    progressLog.scrollTop = progressLog.scrollHeight;
   }
 
   btnProcesar.addEventListener('click', async () => {
-    if (!archivosSeleccionados.length) return;
+    if (!archivos.length) return;
 
+    // Reset UI
     errorBox.className = 'error-box';
     resultBox.className = 'result-box';
-    statusBar.className = 'status-bar visible';
+    progressLog.innerHTML = '';
+    progressFill.style.width = '0%';
+    progressBox.className = 'progress-box visible';
     btnProcesar.disabled = true;
+    dropZone.style.pointerEvents = 'none';
+    dropZone.style.opacity = '0.5';
 
-    const n = archivosSeleccionados.length;
-    statusText.textContent = `Analizando ${n} albarán${n > 1 ? 'es' : ''}... (puede tardar unos segundos)`;
+    const total = archivos.length;
+    progressLabel.textContent = `Procesando ${total} albarán${total > 1 ? 'es' : ''}...`;
+    progressCount.textContent = `0 / ${total}`;
 
     const formData = new FormData();
-    archivosSeleccionados.forEach(f => formData.append('pdfs', f));
+    archivos.forEach(f => formData.append('pdfs', f));
 
     try {
-      const res = await fetch('/api/procesar', { method: 'POST', body: formData });
+      const response = await fetch('/api/procesar', { method: 'POST', body: formData });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Error desconocido');
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Error del servidor');
       }
 
-      // El servidor devuelve el Excel directamente — descargarlo
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      const fecha = new Date().toISOString().slice(0, 10);
-      a.href = url;
-      a.download = `albaranes_${fecha}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
 
-      statusBar.className = 'status-bar';
-      resultStats.textContent = `${n} albarán${n > 1 ? 'es' : ''} procesado${n > 1 ? 's' : ''} correctamente`;
-      resultBox.className = 'result-box visible';
-      btnProcesar.style.display = 'none';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // guarda línea incompleta
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          let msg;
+          try { msg = JSON.parse(line.slice(6)); } catch { continue; }
+
+          if (msg.tipo === 'inicio') {
+            progressCount.textContent = `0 / ${msg.total}`;
+          }
+
+          if (msg.tipo === 'progreso') {
+            const pct = Math.round((msg.completados / msg.total) * 100);
+            progressFill.style.width = pct + '%';
+            progressCount.textContent = `${msg.completados} / ${msg.total}`;
+
+            // Actualizar estado visual del archivo en la lista
+            const item = document.getElementById(`file-${archivos.findIndex(f => f.name === msg.archivo)}`);
+            if (item) {
+              item.classList.add(msg.ok ? 'ok' : 'err');
+              const btn = item.querySelector('.file-remove');
+              if (btn) btn.remove();
+              const status = document.createElement('span');
+              status.className = 'file-status';
+              status.textContent = msg.ok ? '✓' : '✗';
+              item.appendChild(status);
+            }
+
+            addLog(
+              msg.ok ? `✓ ${msg.archivo}` : `✗ ${msg.archivo} — ${msg.error || 'error'}`,
+              msg.ok ? 'ok' : 'err'
+            );
+          }
+
+          if (msg.tipo === 'listo') {
+            progressLabel.textContent = '¡Listo!';
+            progressFill.style.width = '100%';
+
+            // Descargar Excel desde base64
+            const bytes = Uint8Array.from(atob(msg.excel), c => c.charCodeAt(0));
+            const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `albaranes_${msg.fecha}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+
+            progressBox.className = 'progress-box';
+            resultStats.innerHTML = `${msg.filas} líneas extraídas · ${total} albarán${total > 1 ? 'es' : ''} procesado${total > 1 ? 's' : ''}`;
+            if (msg.errores > 0) {
+              resultWarn.textContent = `⚠ ${msg.errores} archivo${msg.errores > 1 ? 's' : ''} con error: ${msg.archivosConError.join(', ')}`;
+            } else {
+              resultWarn.textContent = '';
+            }
+            resultBox.className = 'result-box visible';
+            btnProcesar.style.display = 'none';
+          }
+
+          if (msg.tipo === 'error') {
+            progressBox.className = 'progress-box';
+            errorBox.className = 'error-box visible';
+            errorBox.textContent = '⚠ ' + msg.mensaje;
+            btnProcesar.disabled = false;
+            dropZone.style.pointerEvents = '';
+            dropZone.style.opacity = '';
+          }
+        }
+      }
 
     } catch (err) {
-      statusBar.className = 'status-bar';
+      progressBox.className = 'progress-box';
       errorBox.className = 'error-box visible';
       errorBox.textContent = '⚠ ' + err.message;
       btnProcesar.disabled = false;
+      dropZone.style.pointerEvents = '';
+      dropZone.style.opacity = '';
     }
   });
 
   btnReset.addEventListener('click', () => {
-    archivosSeleccionados = [];
-    renderFileList();
+    archivos = [];
+    renderLista();
     resultBox.className = 'result-box';
     errorBox.className = 'error-box';
+    progressBox.className = 'progress-box';
     btnProcesar.style.display = '';
     btnProcesar.disabled = true;
+    dropZone.style.pointerEvents = '';
+    dropZone.style.opacity = '';
   });
 </script>
 </body>
