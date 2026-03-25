@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KS Albaranes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #F5F0E8;
+      --ink: #1A1410;
+      --accent: #C8442A;
+      --accent2: #2A6B4A;
+      --muted: #8A7F72;
+      --border: #D4C9B8;
+      --card: #FDFAF4;
+      --mono: 'DM Mono', monospace;
+      --serif: 'Fraunces', Georgia, serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--mono);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Grain texture overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 24px 48px;
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo {
+      font-family: var(--serif);
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      color: var(--ink);
+    }
+
+    .logo span {
+      color: var(--accent);
+    }
+
+    .tagline {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .drop-zone {
+      border: 1.5px dashed var(--border);
+      border-radius: 4px;
+      padding: 56px 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: var(--card);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .drop-zone::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent 40%, rgba(200,68,42,0.03) 100%);
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--accent);
+      background: #FDF8F2;
+    }
+
+    .drop-zone.dragover {
+      border-style: solid;
+    }
+
+    .drop-icon {
+      font-size: 40px;
+      margin-bottom: 16px;
+      display: block;
+      filter: grayscale(0.3);
+    }
+
+    .drop-title {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 300;
+      margin-bottom: 8px;
+      color: var(--ink);
+    }
+
+    .drop-sub {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+
+    #fileInput { display: none; }
+
+    .file-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      animation: slideIn 0.2s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .file-name {
+      font-size: 13px;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 460px;
+    }
+
+    .file-remove {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      padding: 0 4px;
+      transition: color 0.15s;
+    }
+    .file-remove:hover { color: var(--accent); }
+
+    .btn-procesar {
+      background: var(--ink);
+      color: var(--bg);
+      border: none;
+      padding: 16px 32px;
+      font-family: var(--mono);
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn-procesar:hover:not(:disabled) {
+      background: var(--accent);
+    }
+
+    .btn-procesar:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .status-bar {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .status-bar.visible { display: flex; }
+
+    .status-text {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+      text-align: center;
+    }
+
+    .progress-track {
+      height: 2px;
+      background: var(--border);
+      border-radius: 1px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.4s ease;
+      border-radius: 1px;
+    }
+
+    .progress-fill.indeterminate {
+      width: 40%;
+      animation: indeterminate 1.2s ease infinite;
+    }
+
+    @keyframes indeterminate {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(350%); }
+    }
+
+    .result-box {
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 24px;
+      flex-direction: column;
+      gap: 16px;
+      animation: slideIn 0.3s ease;
+    }
+
+    .result-box.visible { display: flex; }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .result-badge {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent2);
+      flex-shrink: 0;
+    }
+
+    .result-title {
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 300;
+    }
+
+    .result-stats {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    .btn-descargar {
+      background: var(--accent2);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      font-family: var(--mono);
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      align-self: flex-start;
+    }
+
+    .btn-descargar:hover { opacity: 0.85; }
+
+    .btn-reset {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 10px 20px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: all 0.15s ease;
+      align-self: flex-start;
+    }
+
+    .btn-reset:hover { border-color: var(--ink); color: var(--ink); }
+
+    .error-box {
+      display: none;
+      background: #FDF0EE;
+      border: 1px solid #E8B8B0;
+      border-radius: 3px;
+      padding: 16px 20px;
+      font-size: 13px;
+      color: var(--accent);
+    }
+
+    .error-box.visible { display: block; }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      border-top: 1px solid var(--border);
+      position: relative;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">KS <span>Albaranes</span></div>
+  <div class="tagline">— Extracción automática de documentos</div>
+</header>
+
+<main>
+  <div class="container">
+
+    <div class="drop-zone" id="dropZone">
+      <span class="drop-icon">📄</span>
+      <div class="drop-title">Arrastra los albaranes aquí</div>
+      <div class="drop-sub">O haz clic para seleccionar · PDF · Hasta 20 archivos</div>
+      <input type="file" id="fileInput" accept=".pdf" multiple />
+    </div>
+
+    <div class="file-list" id="fileList"></div>
+
+    <div class="status-bar" id="statusBar">
+      <div class="status-text" id="statusText">Procesando albaranes...</div>
+      <div class="progress-track">
+        <div class="progress-fill indeterminate" id="progressFill"></div>
+      </div>
+    </div>
+
+    <div class="error-box" id="errorBox"></div>
+
+    <div class="result-box" id="resultBox">
+      <div class="result-header">
+        <div class="result-badge"></div>
+        <div class="result-title">Extracción completada</div>
+      </div>
+      <div class="result-stats" id="resultStats"></div>
+      <button class="btn-descargar" id="btnDescargar">⬇ Descargar Excel</button>
+      <button class="btn-reset" id="btnReset">Procesar nuevos albaranes</button>
+    </div>
+
+    <button class="btn-procesar" id="btnProcesar" disabled>
+      <span>Procesar albaranes</span>
+    </button>
+
+  </div>
+</main>
+
+<footer>KS Viajes · Sistema interno de gestión de albaranes</footer>
+
+<script>
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const fileList = document.getElementById('fileList');
+  const btnProcesar = document.getElementById('btnProcesar');
+  const statusBar = document.getElementById('statusBar');
+  const statusText = document.getElementById('statusText');
+  const errorBox = document.getElementById('errorBox');
+  const resultBox = document.getElementById('resultBox');
+  const resultStats = document.getElementById('resultStats');
+  const btnDescargar = document.getElementById('btnDescargar');
+  const btnReset = document.getElementById('btnReset');
+
+  let archivosSeleccionados = [];
+  let datosExtraidos = [];
+
+  // Drag & drop
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    agregarArchivos([...e.dataTransfer.files]);
+  });
+  fileInput.addEventListener('change', () => agregarArchivos([...fileInput.files]));
+
+  function agregarArchivos(nuevos) {
+    const pdfs = nuevos.filter(f => f.type === 'application/pdf');
+    archivosSeleccionados = [...archivosSeleccionados, ...pdfs].slice(0, 20);
+    renderFileList();
+    fileInput.value = '';
+  }
+
+  function renderFileList() {
+    fileList.innerHTML = '';
+    archivosSeleccionados.forEach((f, i) => {
+      const item = document.createElement('div');
+      item.className = 'file-item';
+      item.innerHTML = `
+        <span class="file-name">📄 ${f.name}</span>
+        <button class="file-remove" data-i="${i}">×</button>
+      `;
+      fileList.appendChild(item);
+    });
+    fileList.querySelectorAll('.file-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        archivosSeleccionados.splice(+btn.dataset.i, 1);
+        renderFileList();
+      });
+    });
+    btnProcesar.disabled = archivosSeleccionados.length === 0;
+  }
+
+  btnProcesar.addEventListener('click', async () => {
+    if (!archivosSeleccionados.length) return;
+
+    // Reset UI
+    errorBox.className = 'error-box';
+    resultBox.className = 'result-box';
+    statusBar.className = 'status-bar visible';
+    btnProcesar.disabled = true;
+    datosExtraidos = [];
+
+    const formData = new FormData();
+    archivosSeleccionados.forEach(f => formData.append('pdfs', f));
+
+    statusText.textContent = `Analizando ${archivosSeleccionados.length} albarán${archivosSeleccionados.length > 1 ? 'es' : ''}...`;
+
+    try {
+      const res = await fetch('/api/procesar', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || 'Error desconocido');
+
+      datosExtraidos = data.filas;
+      statusBar.className = 'status-bar';
+
+      const nAlbaranes = new Set(datosExtraidos.map(r => r.n_albaran)).size;
+      resultStats.textContent = `${datosExtraidos.length} líneas extraídas · ${nAlbaranes} albarán${nAlbaranes > 1 ? 'es' : ''} procesado${nAlbaranes > 1 ? 's' : ''}`;
+      resultBox.className = 'result-box visible';
+      btnProcesar.style.display = 'none';
+
+    } catch (err) {
+      statusBar.className = 'status-bar';
+      errorBox.className = 'error-box visible';
+      errorBox.textContent = '⚠ ' + err.message;
+      btnProcesar.disabled = false;
+    }
+  });
+
+  btnDescargar.addEventListener('click', () => {
+    if (!datosExtraidos.length) return;
+
+    const cabeceras = ['Nº Albarán', 'Numero Proyecto', 'Descripcion Proyecto', 'Nombre quien viaja', 'Fecha', 'Trayecto', 'Descripción Servicio', 'Descripción Abreviada', 'Importe unitario', 'Subtotal'];
+    const claves = ['n_albaran', 'numero_proyecto', 'descripcion_proyecto', 'nombre_quien_viaja', 'fecha', 'trayecto', 'descripcion_servicio', 'descripcion_abreviada', 'importe_unitario', 'subtotal'];
+
+    const filas = datosExtraidos.map(row => claves.map(k => row[k] ?? ''));
+
+    const ws = XLSX.utils.aoa_to_sheet([cabeceras, ...filas]);
+
+    // Estilo de cabecera
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      const cell = ws[XLSX.utils.encode_cell({ r: 0, c })];
+      if (cell) {
+        cell.s = {
+          font: { bold: true, color: { rgb: 'FFFFFF' } },
+          fill: { fgColor: { rgb: '1A1410' } },
+          alignment: { horizontal: 'center' }
+        };
+      }
+    }
+
+    // Ancho de columnas
+    ws['!cols'] = [{ wch: 14 }, { wch: 16 }, { wch: 24 }, { wch: 28 }, { wch: 14 }, { wch: 22 }, { wch: 50 }, { wch: 20 }, { wch: 16 }, { wch: 14 }];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Albaranes');
+
+    const fecha = new Date().toISOString().slice(0, 10);
+    XLSX.utils.writeFile(wb, `albaranes_${fecha}.xlsx`);
+  });
+
+  btnReset.addEventListener('click', () => {
+    archivosSeleccionados = [];
+    datosExtraidos = [];
+    renderFileList();
+    resultBox.className = 'result-box';
+    errorBox.className = 'error-box';
+    btnProcesar.style.display = '';
+    btnProcesar.disabled = true;
+  });
+</script>
+</body>
+</html>
