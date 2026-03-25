@@ -6,7 +6,6 @@
   <title>KS Albaranes</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -31,24 +30,12 @@
       flex-direction: column;
     }
 
-    /* Grain texture overlay */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 0;
-    }
-
     header {
       border-bottom: 1px solid var(--border);
       padding: 24px 48px;
       display: flex;
       align-items: baseline;
       gap: 16px;
-      position: relative;
-      z-index: 1;
     }
 
     .logo {
@@ -59,9 +46,7 @@
       color: var(--ink);
     }
 
-    .logo span {
-      color: var(--accent);
-    }
+    .logo span { color: var(--accent); }
 
     .tagline {
       font-size: 11px;
@@ -77,8 +62,6 @@
       align-items: center;
       justify-content: center;
       padding: 48px 24px;
-      position: relative;
-      z-index: 1;
     }
 
     .container {
@@ -97,15 +80,6 @@
       cursor: pointer;
       transition: all 0.2s ease;
       background: var(--card);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .drop-zone::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, transparent 40%, rgba(200,68,42,0.03) 100%);
     }
 
     .drop-zone:hover, .drop-zone.dragover {
@@ -113,38 +87,22 @@
       background: #FDF8F2;
     }
 
-    .drop-zone.dragover {
-      border-style: solid;
-    }
+    .drop-zone.dragover { border-style: solid; }
 
-    .drop-icon {
-      font-size: 40px;
-      margin-bottom: 16px;
-      display: block;
-      filter: grayscale(0.3);
-    }
+    .drop-icon { font-size: 40px; margin-bottom: 16px; display: block; }
 
     .drop-title {
       font-family: var(--serif);
       font-size: 22px;
       font-weight: 300;
       margin-bottom: 8px;
-      color: var(--ink);
     }
 
-    .drop-sub {
-      font-size: 12px;
-      color: var(--muted);
-      letter-spacing: 0.05em;
-    }
+    .drop-sub { font-size: 12px; color: var(--muted); letter-spacing: 0.05em; }
 
     #fileInput { display: none; }
 
-    .file-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
+    .file-list { display: flex; flex-direction: column; gap: 8px; }
 
     .file-item {
       display: flex;
@@ -164,7 +122,6 @@
 
     .file-name {
       font-size: 13px;
-      color: var(--ink);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -201,21 +158,10 @@
       gap: 10px;
     }
 
-    .btn-procesar:hover:not(:disabled) {
-      background: var(--accent);
-    }
+    .btn-procesar:hover:not(:disabled) { background: var(--accent); }
+    .btn-procesar:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    .btn-procesar:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    .status-bar {
-      display: none;
-      flex-direction: column;
-      gap: 8px;
-    }
-
+    .status-bar { display: none; flex-direction: column; gap: 8px; }
     .status-bar.visible { display: flex; }
 
     .status-text {
@@ -235,14 +181,9 @@
     .progress-fill {
       height: 100%;
       background: var(--accent);
-      width: 0%;
-      transition: width 0.4s ease;
-      border-radius: 1px;
-    }
-
-    .progress-fill.indeterminate {
       width: 40%;
       animation: indeterminate 1.2s ease infinite;
+      border-radius: 1px;
     }
 
     @keyframes indeterminate {
@@ -260,14 +201,9 @@
       gap: 16px;
       animation: slideIn 0.3s ease;
     }
-
     .result-box.visible { display: flex; }
 
-    .result-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    .result-header { display: flex; align-items: center; gap: 10px; }
 
     .result-badge {
       width: 8px;
@@ -277,37 +213,8 @@
       flex-shrink: 0;
     }
 
-    .result-title {
-      font-family: var(--serif);
-      font-size: 18px;
-      font-weight: 300;
-    }
-
-    .result-stats {
-      font-size: 12px;
-      color: var(--muted);
-      letter-spacing: 0.04em;
-    }
-
-    .btn-descargar {
-      background: var(--accent2);
-      color: white;
-      border: none;
-      padding: 14px 28px;
-      font-family: var(--mono);
-      font-size: 13px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      cursor: pointer;
-      border-radius: 3px;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      align-self: flex-start;
-    }
-
-    .btn-descargar:hover { opacity: 0.85; }
+    .result-title { font-family: var(--serif); font-size: 18px; font-weight: 300; }
+    .result-stats { font-size: 12px; color: var(--muted); letter-spacing: 0.04em; }
 
     .btn-reset {
       background: none;
@@ -323,7 +230,6 @@
       transition: all 0.15s ease;
       align-self: flex-start;
     }
-
     .btn-reset:hover { border-color: var(--ink); color: var(--ink); }
 
     .error-box {
@@ -335,7 +241,6 @@
       font-size: 13px;
       color: var(--accent);
     }
-
     .error-box.visible { display: block; }
 
     footer {
@@ -345,8 +250,6 @@
       color: var(--muted);
       letter-spacing: 0.06em;
       border-top: 1px solid var(--border);
-      position: relative;
-      z-index: 1;
     }
   </style>
 </head>
@@ -372,7 +275,7 @@
     <div class="status-bar" id="statusBar">
       <div class="status-text" id="statusText">Procesando albaranes...</div>
       <div class="progress-track">
-        <div class="progress-fill indeterminate" id="progressFill"></div>
+        <div class="progress-fill" id="progressFill"></div>
       </div>
     </div>
 
@@ -384,12 +287,11 @@
         <div class="result-title">Extracción completada</div>
       </div>
       <div class="result-stats" id="resultStats"></div>
-      <button class="btn-descargar" id="btnDescargar">⬇ Descargar Excel</button>
       <button class="btn-reset" id="btnReset">Procesar nuevos albaranes</button>
     </div>
 
     <button class="btn-procesar" id="btnProcesar" disabled>
-      <span>Procesar albaranes</span>
+      <span>Procesar y descargar Excel</span>
     </button>
 
   </div>
@@ -407,13 +309,10 @@
   const errorBox = document.getElementById('errorBox');
   const resultBox = document.getElementById('resultBox');
   const resultStats = document.getElementById('resultStats');
-  const btnDescargar = document.getElementById('btnDescargar');
   const btnReset = document.getElementById('btnReset');
 
   let archivosSeleccionados = [];
-  let datosExtraidos = [];
 
-  // Drag & drop
   dropZone.addEventListener('click', () => fileInput.click());
   dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
   dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
@@ -422,13 +321,15 @@
     dropZone.classList.remove('dragover');
     agregarArchivos([...e.dataTransfer.files]);
   });
-  fileInput.addEventListener('change', () => agregarArchivos([...fileInput.files]));
+  fileInput.addEventListener('change', () => {
+    agregarArchivos([...fileInput.files]);
+    fileInput.value = '';
+  });
 
   function agregarArchivos(nuevos) {
     const pdfs = nuevos.filter(f => f.type === 'application/pdf');
     archivosSeleccionados = [...archivosSeleccionados, ...pdfs].slice(0, 20);
     renderFileList();
-    fileInput.value = '';
   }
 
   function renderFileList() {
@@ -454,29 +355,39 @@
   btnProcesar.addEventListener('click', async () => {
     if (!archivosSeleccionados.length) return;
 
-    // Reset UI
     errorBox.className = 'error-box';
     resultBox.className = 'result-box';
     statusBar.className = 'status-bar visible';
     btnProcesar.disabled = true;
-    datosExtraidos = [];
+
+    const n = archivosSeleccionados.length;
+    statusText.textContent = `Analizando ${n} albarán${n > 1 ? 'es' : ''}... (puede tardar unos segundos)`;
 
     const formData = new FormData();
     archivosSeleccionados.forEach(f => formData.append('pdfs', f));
 
-    statusText.textContent = `Analizando ${archivosSeleccionados.length} albarán${archivosSeleccionados.length > 1 ? 'es' : ''}...`;
-
     try {
       const res = await fetch('/api/procesar', { method: 'POST', body: formData });
-      const data = await res.json();
 
-      if (!res.ok) throw new Error(data.error || 'Error desconocido');
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Error desconocido');
+      }
 
-      datosExtraidos = data.filas;
+      // El servidor devuelve el Excel directamente — descargarlo
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const fecha = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `albaranes_${fecha}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
       statusBar.className = 'status-bar';
-
-      const nAlbaranes = new Set(datosExtraidos.map(r => r.n_albaran)).size;
-      resultStats.textContent = `${datosExtraidos.length} líneas extraídas · ${nAlbaranes} albarán${nAlbaranes > 1 ? 'es' : ''} procesado${nAlbaranes > 1 ? 's' : ''}`;
+      resultStats.textContent = `${n} albarán${n > 1 ? 'es' : ''} procesado${n > 1 ? 's' : ''} correctamente`;
       resultBox.className = 'result-box visible';
       btnProcesar.style.display = 'none';
 
@@ -488,42 +399,8 @@
     }
   });
 
-  btnDescargar.addEventListener('click', () => {
-    if (!datosExtraidos.length) return;
-
-    const cabeceras = ['Nº Albarán', 'Numero Proyecto', 'Descripcion Proyecto', 'Nombre quien viaja', 'Fecha', 'Trayecto', 'Descripción Servicio', 'Descripción Abreviada', 'Importe unitario', 'Subtotal'];
-    const claves = ['n_albaran', 'numero_proyecto', 'descripcion_proyecto', 'nombre_quien_viaja', 'fecha', 'trayecto', 'descripcion_servicio', 'descripcion_abreviada', 'importe_unitario', 'subtotal'];
-
-    const filas = datosExtraidos.map(row => claves.map(k => row[k] ?? ''));
-
-    const ws = XLSX.utils.aoa_to_sheet([cabeceras, ...filas]);
-
-    // Estilo de cabecera
-    const range = XLSX.utils.decode_range(ws['!ref']);
-    for (let c = range.s.c; c <= range.e.c; c++) {
-      const cell = ws[XLSX.utils.encode_cell({ r: 0, c })];
-      if (cell) {
-        cell.s = {
-          font: { bold: true, color: { rgb: 'FFFFFF' } },
-          fill: { fgColor: { rgb: '1A1410' } },
-          alignment: { horizontal: 'center' }
-        };
-      }
-    }
-
-    // Ancho de columnas
-    ws['!cols'] = [{ wch: 14 }, { wch: 16 }, { wch: 24 }, { wch: 28 }, { wch: 14 }, { wch: 22 }, { wch: 50 }, { wch: 20 }, { wch: 16 }, { wch: 14 }];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Albaranes');
-
-    const fecha = new Date().toISOString().slice(0, 10);
-    XLSX.utils.writeFile(wb, `albaranes_${fecha}.xlsx`);
-  });
-
   btnReset.addEventListener('click', () => {
     archivosSeleccionados = [];
-    datosExtraidos = [];
     renderFileList();
     resultBox.className = 'result-box';
     errorBox.className = 'error-box';
