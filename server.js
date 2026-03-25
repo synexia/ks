@@ -5,7 +5,7 @@ const path = require('path');
 const XLSX = require('xlsx');
 
 const app = express();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024, files: 100 } });
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -65,7 +65,7 @@ REGLA 4 — TASAS DE EMISIÓN
 Siempre generan una fila propia por viajero. Nunca las agrupes con otros servicios.
 Si hay una tasa de 15,00 con TOTAL 30,00 y hay 2 viajeros → 2 filas de 15,00 cada una.
 descripcion_abreviada: OTROS
-trayecto: déjalo vacío (null)
+trayecto: null
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 REGLA 5 — HOTEL Y NOCHES
@@ -82,7 +82,7 @@ REGLA 6 — TRANSPORTE (AVIÓN, TREN, COCHE, TAXI)
 Ida y vuelta en líneas separadas del albarán = 2 filas separadas en la salida, con sus fechas y trayectos propios.
 Ida y vuelta en una sola línea (ej: "VALENCIA - PARIS - VALENCIA") = 1 fila, trayecto tal cual aparece.
 Trayecto: siempre ORIGEN - DESTINO en mayúsculas.
-Las tasas de aeropuerto o tasas incluidas en el billete (ej: "Tasas 9,38") forman parte del importe del billete si vienen en la misma línea; son TASAS DE EMISIÓN solo si aparecen en su propia línea con ese nombre.
+Las tasas de aeropuerto incluidas en el billete (ej: "Tasas 9,38") forman parte del importe del billete si vienen en la misma línea; son TASAS DE EMISIÓN solo si aparecen en su propia línea con ese nombre.
 Fecha: la fecha de salida/inicio del trayecto.
 descripcion_abreviada: AVION / TREN / COCHE / TAXI según corresponda.
 
@@ -97,7 +97,7 @@ Trayecto: la ciudad relevante si aplica, o null si no hay.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 REGLA 8 — NÚMERO Y DESCRIPCIÓN DE PROYECTO
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-numero_proyecto: el código alfanumérico que precede a la descripción del proyecto en la cabecera del bloque (ej: "24VNR02", "INDITEX001"). Déjalo vacío (null) si no hay código diferenciado.
+numero_proyecto: el código alfanumérico que precede a la descripción del proyecto en la cabecera del bloque (ej: "24VNR02", "INDITEX001"). Déjalo null si no hay código diferenciado.
 descripcion_proyecto: el nombre del proyecto/evento/marca (ej: "VINCE FIXTURES 2024", "INDITEX FABRIC FAIR", "LOUIS VUITTON SAINT TROPEZ").
 IMPORTANTE: Los códigos tipo "KS XXXXX" que aparecen al PIE del documento son referencias internas del agente de viajes, NO son número de proyecto. Ignóralos para este campo.
 Si la cabecera del bloque solo tiene descripción sin código (ej: "VH - PARIS"), numero_proyecto = null y descripcion_proyecto = "VH - PARIS".
@@ -166,80 +166,107 @@ FASE 2 — FORMATO DE SALIDA
 Devuelve ÚNICAMENTE JSON válido. Sin texto antes ni después. Sin explicaciones. Sin markdown. Sin bloques de código.
 Formato: una lista [] donde cada elemento {} es una fila con las claves exactas definidas arriba.`;
 
-app.post('/api/procesar', upload.array('pdfs', 20), async (req, res) => {
+// Procesa un único PDF y devuelve sus filas
+async function procesarPDF(file) {
+  let uploadedFile;
   try {
-    const files = req.files;
-    if (!files || files.length === 0) {
-      return res.status(400).json({ error: 'No se han enviado archivos.' });
-    }
+    uploadedFile = await openai.files.create({
+      file: new File([file.buffer], file.originalname, { type: 'application/pdf' }),
+      purpose: 'assistants',
+    });
 
-    const todasLasFilas = [];
-
-    for (const file of files) {
-      // Subir el PDF a OpenAI Files API
-      let uploadedFile;
-      try {
-        const blob = new Blob([file.buffer], { type: 'application/pdf' });
-        const formData = new FormData();
-        formData.append('file', blob, file.originalname);
-        formData.append('purpose', 'assistants');
-
-        uploadedFile = await openai.files.create({
-          file: new File([file.buffer], file.originalname, { type: 'application/pdf' }),
-          purpose: 'assistants',
-        });
-      } catch (e) {
-        throw new Error(`No se pudo subir el PDF "${file.originalname}" a OpenAI: ${e.message}`);
-      }
-
-      let content;
-      try {
-        const response = await openai.responses.create({
-          model: 'gpt-4o',
-          instructions: SYSTEM_PROMPT,
-          input: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'input_file',
-                  file_id: uploadedFile.id,
-                },
-                {
-                  type: 'input_text',
-                  text: 'Extrae todos los datos de este albarán siguiendo las instrucciones. Devuelve únicamente el JSON, sin texto adicional ni bloques de código.',
-                },
-              ],
-            },
+    const response = await openai.responses.create({
+      model: 'gpt-4o',
+      instructions: SYSTEM_PROMPT,
+      input: [
+        {
+          role: 'user',
+          content: [
+            { type: 'input_file', file_id: uploadedFile.id },
+            { type: 'input_text', text: 'Extrae todos los datos de este albarán. Devuelve únicamente el JSON, sin texto adicional ni bloques de código.' },
           ],
-        });
+        },
+      ],
+    });
 
-        content = response.output_text.trim();
-      } finally {
-        // Eliminar el archivo de OpenAI tras procesarlo
-        try { await openai.files.del(uploadedFile.id); } catch (_) {}
-      }
+    let content = response.output_text.trim();
+    content = content.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
 
-      // Limpiar posibles bloques de código que el modelo añada
-      content = content.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+    return JSON.parse(content);
 
-      let filas;
-      try {
-        filas = JSON.parse(content);
-      } catch (e) {
-        console.error('Error parseando JSON para:', file.originalname, '\nRespuesta:', content);
-        throw new Error(`No se pudo interpretar la respuesta del albarán "${file.originalname}". Intenta de nuevo.`);
-      }
-
-      todasLasFilas.push(...filas);
+  } finally {
+    if (uploadedFile) {
+      try { await openai.files.del(uploadedFile.id); } catch (_) {}
     }
+  }
+}
 
-    // Generar Excel
+// Ejecuta tareas en paralelo con un límite de concurrencia
+async function procesarEnParalelo(tareas, concurrencia) {
+  const resultados = new Array(tareas.length);
+  let indice = 0;
+
+  async function worker() {
+    while (indice < tareas.length) {
+      const i = indice++;
+      resultados[i] = await tareas[i]();
+    }
+  }
+
+  const workers = Array.from({ length: concurrencia }, worker);
+  await Promise.all(workers);
+  return resultados;
+}
+
+// Endpoint principal con SSE para progreso en tiempo real
+app.post('/api/procesar', upload.array('pdfs', 100), async (req, res) => {
+  const files = req.files;
+  if (!files || files.length === 0) {
+    return res.status(400).json({ error: 'No se han enviado archivos.' });
+  }
+
+  // Cabeceras SSE
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const send = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+
+  const total = files.length;
+  let completados = 0;
+  const todasLasFilas = [];
+  const errores = [];
+
+  send({ tipo: 'inicio', total });
+
+  const tareas = files.map(file => async () => {
+    try {
+      const filas = await procesarPDF(file);
+      todasLasFilas.push(...filas);
+      completados++;
+      send({ tipo: 'progreso', completados, total, archivo: file.originalname, ok: true });
+    } catch (err) {
+      completados++;
+      errores.push(file.originalname);
+      send({ tipo: 'progreso', completados, total, archivo: file.originalname, ok: false, error: err.message });
+    }
+  });
+
+  // 5 en paralelo: equilibrio entre velocidad y límites de la API
+  await procesarEnParalelo(tareas, 5);
+
+  if (todasLasFilas.length === 0) {
+    send({ tipo: 'error', mensaje: 'No se pudo extraer datos de ningún albarán.' });
+    return res.end();
+  }
+
+  // Generar Excel
+  try {
     const cabeceras = ['Nº Albarán', 'Numero Proyecto', 'Descripcion Proyecto', 'Nombre quien viaja', 'Fecha', 'Trayecto', 'Descripción Servicio', 'Descripción Abreviada', 'Importe unitario', 'Subtotal'];
     const claves = ['n_albaran', 'numero_proyecto', 'descripcion_proyecto', 'nombre_quien_viaja', 'fecha', 'trayecto', 'descripcion_servicio', 'descripcion_abreviada', 'importe_unitario', 'subtotal'];
 
     const filas = todasLasFilas.map(row => claves.map(k => row[k] ?? ''));
-
     const ws = XLSX.utils.aoa_to_sheet([cabeceras, ...filas]);
     ws['!cols'] = [{ wch: 14 }, { wch: 16 }, { wch: 24 }, { wch: 28 }, { wch: 14 }, { wch: 22 }, { wch: 50 }, { wch: 20 }, { wch: 16 }, { wch: 14 }];
 
@@ -247,16 +274,21 @@ app.post('/api/procesar', upload.array('pdfs', 20), async (req, res) => {
     XLSX.utils.book_append_sheet(wb, ws, 'Albaranes');
 
     const excelBuffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    const excelBase64 = excelBuffer.toString('base64');
 
-    const fecha = new Date().toISOString().slice(0, 10);
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="albaranes_${fecha}.xlsx"`);
-    res.send(excelBuffer);
-
+    send({
+      tipo: 'listo',
+      filas: todasLasFilas.length,
+      errores: errores.length,
+      archivosConError: errores,
+      excel: excelBase64,
+      fecha: new Date().toISOString().slice(0, 10),
+    });
   } catch (err) {
-    console.error('Error en /api/procesar:', err.message);
-    res.status(500).json({ error: err.message || 'Error interno del servidor.' });
+    send({ tipo: 'error', mensaje: 'Error al generar el Excel: ' + err.message });
   }
+
+  res.end();
 });
 
 const PORT = process.env.PORT || 3000;
