@@ -3,6 +3,7 @@ const multer = require('multer');
 const OpenAI = require('openai');
 const path = require('path');
 const pdfParse = require('pdf-parse');
+const XLSX = require('xlsx');
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
@@ -55,7 +56,6 @@ app.post('/api/procesar', upload.array('pdfs', 20), async (req, res) => {
     const todasLasFilas = [];
 
     for (const file of files) {
-      // Extraer texto del PDF
       let textoPDF;
       try {
         const parsed = await pdfParse(file.buffer);
@@ -65,7 +65,7 @@ app.post('/api/procesar', upload.array('pdfs', 20), async (req, res) => {
       }
 
       if (!textoPDF || textoPDF.trim().length < 20) {
-        throw new Error(`El PDF "${file.originalname}" parece estar vacío o ser una imagen escaneada sin texto. Contacta con soporte.`);
+        throw new Error(`El PDF "${file.originalname}" parece estar vacío o ser una imagen escaneada sin texto.`);
       }
 
       const response = await openai.chat.completions.create({
@@ -95,7 +95,24 @@ app.post('/api/procesar', upload.array('pdfs', 20), async (req, res) => {
       todasLasFilas.push(...filas);
     }
 
-    res.json({ filas: todasLasFilas });
+    // Generar Excel en el servidor
+    const cabeceras = ['Nº Albarán', 'Numero Proyecto', 'Descripcion Proyecto', 'Nombre quien viaja', 'Fecha', 'Trayecto', 'Descripción Servicio', 'Descripción Abreviada', 'Importe unitario', 'Subtotal'];
+    const claves = ['n_albaran', 'numero_proyecto', 'descripcion_proyecto', 'nombre_quien_viaja', 'fecha', 'trayecto', 'descripcion_servicio', 'descripcion_abreviada', 'importe_unitario', 'subtotal'];
+
+    const filas = todasLasFilas.map(row => claves.map(k => row[k] ?? ''));
+
+    const ws = XLSX.utils.aoa_to_sheet([cabeceras, ...filas]);
+    ws['!cols'] = [{ wch: 14 }, { wch: 16 }, { wch: 24 }, { wch: 28 }, { wch: 14 }, { wch: 22 }, { wch: 50 }, { wch: 20 }, { wch: 16 }, { wch: 14 }];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Albaranes');
+
+    const excelBuffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    const fecha = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="albaranes_${fecha}.xlsx"`);
+    res.send(excelBuffer);
 
   } catch (err) {
     console.error('Error en /api/procesar:', err.message);
