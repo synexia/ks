@@ -2,13 +2,14 @@ const express = require('express');
 const multer = require('multer');
 const OpenAI = require('openai');
 const path = require('path');
+const pdfParse = require('pdf-parse');
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 const SYSTEM_PROMPT = `Eres un asistente especializado en extracción de datos de albaranes de agencias de viajes.
 
@@ -54,7 +55,18 @@ app.post('/api/procesar', upload.array('pdfs', 20), async (req, res) => {
     const todasLasFilas = [];
 
     for (const file of files) {
-      const base64PDF = file.buffer.toString('base64');
+      // Extraer texto del PDF
+      let textoPDF;
+      try {
+        const parsed = await pdfParse(file.buffer);
+        textoPDF = parsed.text;
+      } catch (e) {
+        throw new Error(`No se pudo leer el PDF "${file.originalname}". Asegúrate de que no está protegido con contraseña.`);
+      }
+
+      if (!textoPDF || textoPDF.trim().length < 20) {
+        throw new Error(`El PDF "${file.originalname}" parece estar vacío o ser una imagen escaneada sin texto. Contacta con soporte.`);
+      }
 
       const response = await openai.chat.completions.create({
         model: 'gpt-4o',
@@ -62,19 +74,7 @@ app.post('/api/procesar', upload.array('pdfs', 20), async (req, res) => {
           { role: 'system', content: SYSTEM_PROMPT },
           {
             role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: `Extrae todos los datos de este albarán siguiendo las instrucciones del sistema. Devuelve únicamente el JSON.`
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:application/pdf;base64,${base64PDF}`,
-                  detail: 'high'
-                }
-              }
-            ]
+            content: `Extrae todos los datos de este albarán siguiendo las instrucciones del sistema. Devuelve únicamente el JSON.\n\nCONTENIDO DEL ALBARÁN:\n\n${textoPDF}`
           }
         ],
         max_tokens: 4096,
@@ -89,7 +89,7 @@ app.post('/api/procesar', upload.array('pdfs', 20), async (req, res) => {
         filas = JSON.parse(content);
       } catch (e) {
         console.error('Error parseando JSON para archivo:', file.originalname, content);
-        throw new Error(`No se pudo parsear la respuesta del albarán "${file.originalname}". Intenta de nuevo.`);
+        throw new Error(`No se pudo interpretar la respuesta del albarán "${file.originalname}". Intenta de nuevo.`);
       }
 
       todasLasFilas.push(...filas);
